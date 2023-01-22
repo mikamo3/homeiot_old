@@ -1,6 +1,4 @@
 import binascii
-import json
-
 DEVICETYPE_METER = 0x54
 DEVICETYPE_MOTION = 0x73
 DEVICETYPE_CONTACT = 0x64
@@ -27,16 +25,25 @@ def getDevice(macaddr, rawdata):
         return None
 
 
-class SwitchbotDevice():
+class Device():
     def __init__(self, macaddr, rawdata) -> None:
         self.macaddr = macaddr
         self.rawdata = rawdata
 
     def perse(self):
-        sensorData = binascii.unhexlify(self.rawdata[4:])
         resp = {}
         resp['sensorData'] = self.rawdata[4:]
         resp['macaddress'] = self.macaddr
+        return resp
+
+
+class SwitchbotDevice(Device):
+    def __init__(self, macaddr, rawdata) -> None:
+        super().__init__(macaddr, rawdata)
+
+    def perse(self):
+        sensorData = binascii.unhexlify(self.rawdata[4:])
+        resp = super().perse()
         resp['deviceType'] = chr(getbit(sensorData[0], 6, 0))
         resp['battery'] = (getbit(sensorData[2], 6, 0))
         return resp
@@ -59,6 +66,7 @@ class MotionSensor(SwitchbotDevice):
         resp['lightIntensity'] = getbit(sensorData[5], 1, 0)
         resp['sinceLastTriggerRipTime'] = (sensorData[3] << 8)+sensorData[4]
         return resp
+
 
 class Meter(SwitchbotDevice):
     def __init__(self, macaddr, rawdata) -> None:
@@ -83,6 +91,7 @@ class Meter(SwitchbotDevice):
         resp['humidity'] = getbit(sensorData[5], 6, 0)
         resp['temperratureScale'] = getbit(sensorData[5], 7)
         return resp
+
 
 class ContactSensor(SwitchbotDevice):
     def __init__(self, macaddr, rawdata) -> None:
@@ -117,6 +126,7 @@ class ContactSensor(SwitchbotDevice):
         resp['buttonPushCount'] = getbit(sensorData[8], 3, 0)
         return resp
 
+
 class Curtain(SwitchbotDevice):
     def __init__(self, macaddr, rawdata) -> None:
         super().__init__(macaddr, rawdata)
@@ -147,14 +157,13 @@ class Bot(SwitchbotDevice):
         return resp
 
 
-class EnvSensor():
+class EnvSensor(Device):
     def __init__(self, macaddr, rawdata) -> None:
-        self.macaddr = macaddr
-        self.rawdata = rawdata
+        super().__init__(macaddr, rawdata)
 
     def perse(self):
         sensorData = binascii.unhexlify(self.rawdata[4:])
-        resp = {}
+        resp = super().perse()
         resp['sensorData'] = self.rawdata[4:]
         resp['macaddress'] = self.macaddr
         resp['deviceType'] = chr(sensorData[0])
