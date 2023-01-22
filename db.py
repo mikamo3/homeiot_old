@@ -32,11 +32,18 @@ class Db():
             port=8086,
             database='homeiot'
         )
+        self.prev = {}
 
     def insert(self, data):
         name = getMeasurementName(data['deviceType'])
+
         if name == None:
             return
+
+        if name in self.prev.keys():
+            if self.prev[name] == data:
+                return
+        self.prev[name] = data.copy()
         points = [{
             'measurement': name,
             'tags': {
